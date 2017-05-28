@@ -3,7 +3,8 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    additional_functions.cpp
 
 
 win32: OS_SUFFIX = win32
@@ -53,48 +54,47 @@ linux {
          -lopencv_xobjdetect \
 }
 win32 {
-    OPENCV_LIB_PATH = C:\opencv-build\install\x86\mingw\bin
-    INCLUDEPATH += C:\opencv-build\install\include
+    OPENCV_LIB_PATH = D:\opencv\build\install\x86\mingw\bin
+    INCLUDEPATH += D:\opencv\build\install\include
     LIBS += -L$$OPENCV_LIB_PATH \
-        -lopencv_aruco310 \
-        -lopencv_bgsegm310 \
-        -lopencv_bioinspired310 \
-        -lopencv_calib3d310 \
-        -lopencv_ccalib310 \
-        -lopencv_core310 \
-        -lopencv_datasets310 \
-        -lopencv_dnn310 \
-        -lopencv_dpm310 \
-        -lopencv_face310 \
-        -lopencv_features2d310 \
-        -lopencv_flann310 \
-        -lopencv_fuzzy310 \
-        -lopencv_highgui310 \
-        -lopencv_imgcodecs310 \
-        -lopencv_imgproc310 \
-        -lopencv_line_descriptor310 \
-        -lopencv_ml310 \
-        -lopencv_objdetect310 \
-        -lopencv_optflow310 \
-        -lopencv_photo310 \
-        -lopencv_plot310 \
-        -lopencv_reg310 \
-        -lopencv_rgbd310 \
-        -lopencv_saliency310 \
-        -lopencv_shape310 \
-        -lopencv_stereo310 \
-        -lopencv_stitching310 \
-        -lopencv_structured_light310 \
-        -lopencv_superres310 \
-        -lopencv_surface_matching310 \
-        -lopencv_text310 \
-        -lopencv_tracking310 \
-        -lopencv_video310 \
-        -lopencv_videoio310 \
-        -lopencv_videostab310 \
-        -lopencv_xfeatures2d310 \
-        -lopencv_ximgproc310 \
-        -lopencv_xobjdetect310 \
-        -lopencv_xphoto310  \
-#        $$OPENCV_LIB_PATH\opencv_ffmpeg310.dll \
+        -lopencv_aruco320 \
+        -lopencv_bgsegm320 \
+        -lopencv_bioinspired320 \
+        -lopencv_calib3d320 \
+        -lopencv_ccalib320 \
+        -lopencv_core320 \
+        -lopencv_datasets320 \
+        -lopencv_dnn320 \
+        -lopencv_dpm320 \
+        -lopencv_face320 \
+        -lopencv_features2d320 \
+        -lopencv_flann320 \
+        -lopencv_fuzzy320 \
+        -lopencv_highgui320 \
+        -lopencv_imgcodecs320 \
+        -lopencv_imgproc320 \
+        -lopencv_line_descriptor320 \
+        -lopencv_ml320 \
+        -lopencv_objdetect320 \
+        -lopencv_optflow320 \
+        -lopencv_photo320 \
+        -lopencv_plot320 \
+        -lopencv_reg320 \
+        -lopencv_rgbd320 \
+        -lopencv_saliency320 \
+        -lopencv_shape320 \
+        -lopencv_stereo320 \
+        -lopencv_stitching320 \
+        -lopencv_structured_light320 \
+        -lopencv_superres320 \
+        -lopencv_surface_matching320 \
+        -lopencv_text320 \
+        -lopencv_tracking320 \
+        -lopencv_video320 \
+        -lopencv_videoio320 \
+        -lopencv_videostab320 \
+        -lopencv_xfeatures2d320 \
+        -lopencv_ximgproc320 \
+        -lopencv_xobjdetect320 \
+        -lopencv_xphoto320  \
 }
