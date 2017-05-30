@@ -111,29 +111,24 @@ int main(int argc, char *argv[])
     cout << "Time for detection and compution of frame 2: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
     cout << "Number of features for image 2: " << im2_kps.size() << endl;
 
+    Ptr<DescriptorMatcher> matcher;
+    matcher = DescriptorMatcher::create("BruteForce");
+    vector< vector< DMatch > > matches;
+    matcher->knnMatch(im1_dsc, im2_dsc, matches, 1);
 
-    FlannBasedMatcher matcher; /** Flann based matcher **/
-    drawKeypointCircle(img1, im1_kps, Scalar(0, 0 , 127));
-    imshow( "image1", img1 );
-         cvWaitKey(4000);
-    vector< DMatch > matches;
-    timestamp1   = (double)getTickCount();
-    matcher.match( im1_dsc, im2_dsc, matches );
-    timestamp2 = (double)getTickCount();
-    cout << "Matching time: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
     cout << "Number of matched features: " << matches.size() << endl;
 
-     for( size_t i = 0; i < matches.size(); i++ )
-        {
-           //-- Get the keypoints from the good matches
-           im1_kps_matched.push_back( im1_kps[ matches[i].queryIdx ] );
-           //previous_frame_matched_points.push_back( previous_frame_keypoints[ matches[i].queryIdx ].pt );
-           //cout <<  matches[i].queryIdx << "     ";
-           im2_kps_matched.push_back( im2_kps[ matches[i].trainIdx ] );
-           //current_frame_matched_points.push_back( current_frame_keypoints[ matches[i].trainIdx ].pt );
-           //cout <<  matches[i].trainIdx << "     " << endl;
-        }
-    drawKeypointCircle(img1, im2_kps_matched, Scalar(0, 255 , 0));
+//     for( size_t i = 0; i < matches.size(); i++ )
+//        {
+//           //-- Get the keypoints from the good matches
+//           im1_kps_matched.push_back( im1_kps[ matches[i].queryIdx ] );
+//           //previous_frame_matched_points.push_back( previous_frame_keypoints[ matches[i].queryIdx ].pt );
+//           //cout <<  matches[i].queryIdx << "     ";
+//           im2_kps_matched.push_back( im2_kps[ matches[i].trainIdx ] );
+//           //current_frame_matched_points.push_back( current_frame_keypoints[ matches[i].trainIdx ].pt );
+//           //cout <<  matches[i].trainIdx << "     " << endl;
+//        }
+//    drawKeypointCircle(img1, im2_kps_matched, Scalar(0, 255 , 0));
     imshow( "image1", img1 );
     cvWaitKey(4000);
     //imshow( "image1", img2 );
