@@ -15,7 +15,11 @@ using namespace cv;
 using namespace cv::xfeatures2d;
 
 
-void drawKeypointCircle (Mat& image,  vector<KeyPoint>& kps, Scalar color)
+void drawKeypointCircle ( // Отрисовка особых точек цветными кругами
+                         Mat& image,
+                         vector<KeyPoint>& kps,
+                         Scalar color
+                        )
 {
     for (size_t i = 0; i < kps.size(); i++ )
     {
@@ -24,4 +28,25 @@ void drawKeypointCircle (Mat& image,  vector<KeyPoint>& kps, Scalar color)
     }
 
 }
+
+void drawMatchesLines ( // Отрисовка особых точек
+                        Mat& image, //Изображение 1
+                        vector<KeyPoint>& kps1, //Вектор особых точек изображения 1
+                        vector<KeyPoint>& kps2, //Вектор особых точек изображения 2
+                        Scalar kps1_color, //Цвет особых точек изображения 1
+                        Scalar kps2_color, //Цвет особых точек изображения 2
+                        Scalar lines_color //Цвет соединительных линий
+                        )
+{
+    for (size_t i = 0; i < kps1.size(); i++ )
+    {
+        Point2f point1 = kps1[i].pt; Point2f point2 = kps2[i].pt;
+        circle( image, point1 , 4, kps1_color , 1, 8, 0 );
+        circle( image, point2 , 4, kps2_color , 1, 8, 0 );
+        line(image,point1,point2,lines_color,1,8,0);
+    }
+
+}
+
+
 

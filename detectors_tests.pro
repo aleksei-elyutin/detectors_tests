@@ -52,7 +52,7 @@ linux {
          -lopencv_videostab \
          -lopencv_xfeatures2d \
          -lopencv_ximgproc \
-         -lopencv_xobjdetect \
+         -lopencv_xobjdetect
 }
 win32 {
 #    OPENCV_LIB_PATH = D:\opencv\build\install\x86\mingw\bin
