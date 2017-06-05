@@ -10,6 +10,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/calib3d.hpp>
 
+
 using namespace std;
 using namespace cv;
 using namespace cv::xfeatures2d;
@@ -34,26 +35,18 @@ const string keys =
      {@path           |      | path to image           } \
      {@image1Name     |      | image  for processing   } \
      {@image2Name     |      | image  for processing   } \
-     {@detector       |SURF  | detector name           }";
+     {@detector       |SURF  | detector name           } \
+     {o output        |      | detector name           }";
 
 int main(int argc, char *argv[])
 {
     /** Parsing input **/  
     cv::CommandLineParser parser(argc, argv, keys);
-//    if (!parser.check())
-//    {
-//        cout << "Invalid input. Type 'help', 'h', 'usage' or '?' to get help." << endl;
-//        parser.printErrors();
-//        return -1;
-//    }
-
     if (parser.has("help"))
     {
         parser.printMessage();
         return 0;
     } //Отобразить информационное сообщение
-
-
     string inputPath = parser.get<string>("@path");
     string inputImage1 = parser.get<string>("@image1Name");
     string inputImage2 = parser.get<string>("@image2Name");
@@ -64,23 +57,26 @@ int main(int argc, char *argv[])
     buffer.clear();
     buffer = inputPath;  buffer += inputImage2;
     Mat img2 = imread(buffer);
+
     if( img1.empty() |  img1.empty() )
     {
-        if( img1.empty()) cout << "Error loading image 1" << endl;
-        if( img2.empty()) cout << "Error loading image 2" << endl;
+        if( img1.empty()) if (parser.has("output")) cout << "Error loading image 1" << endl;
+        if( img2.empty()) if (parser.has("output")) cout << "Error loading image 2" << endl;
         return -1;
     }
     else
     {
-        cout << "Loaded " << inputImage1 << " as image 1" << endl;
-        cout << "Loaded " << inputImage2 << " as image 2" << endl;
+        if (parser.has("output")) cout << "Loaded " << inputImage1 << " as image 1" << endl;
+        if (parser.has("output")) cout << "Loaded " << inputImage2 << " as image 2" << endl;
     }
 
     /** Objects creation **/
-    namedWindow( "image1", WINDOW_AUTOSIZE); //Создание окна
+    if (parser.has("output")) namedWindow( "image1", WINDOW_AUTOSIZE); //Создание окна
 
-    cout << "Try to init " << detectorName << "... "<< endl;
+    if (parser.has("output")) cout << "Try to init " << detectorName << "... "<< endl;
     Ptr<Feature2D> detector_obj;
+    Ptr<DescriptorMatcher> matcher;
+    matcher = DescriptorMatcher::create("BruteForce");
 
     if ((detectorName == "SURF")  |
         (detectorName == "KAZE")  |
@@ -91,39 +87,39 @@ int main(int argc, char *argv[])
     {
         if (detectorName == "SURF") /** SURF creation **/
             {
-                //detector_obj = SURF::create(); //defaults
-                detector_obj = SURF::create(
+                detector_obj = SURF::create(); //defaults
+                /*detector_obj = SURF::create(
                             700, // hessianThreshold - порог гессиана
                             3, // nOctaves - число октав
                             3, // nOctaveLayers - число уровней внутри каждой октавы
                             false, // использовать расширенный дескриптор
-                            true); // использовать вычисление ориентации
-                cout << "SURF" << " - OK." << endl;
+                            true); // использовать вычисление ориентации*/
+                if (parser.has("output")) cout << "SURF" << " - OK." << endl;
              }
         if (detectorName == "KAZE")  /** KAZE creation **/
             {
                 detector_obj = KAZE::create(); //defaults
-                cout << "KAZE" << " - OK." << endl;
+                if (parser.has("output")) cout << "KAZE" << " - OK." << endl;
             }
         if (detectorName == "AKAZE")  /** AKAZE creation **/
             {
                 detector_obj = AKAZE::create(); //defaults
-                cout << "AKAZE" << " - OK." << endl;
+                if (parser.has("output")) cout << "AKAZE" << " - OK." << endl;
             }
         if (detectorName == "BRISK")  /** BRISK creation **/
             {
                 detector_obj = BRISK::create(); //defaults
-                cout << "BRISK" << " - OK." << endl;
+                if (parser.has("output")) cout << "BRISK" << " - OK." << endl;
             }
         if (detectorName == "ORB")  /** FAST creation **/
             {
                 detector_obj = ORB::create(); //defaults
-                 cout << "ORB" << " - OK." << endl;
+                 if (parser.has("output")) cout << "ORB" << " - OK." << endl;
             }
         if (detectorName == "SIFT")  /** FAST creation **/
             {
                 detector_obj = SIFT::create(); //defaults
-                 cout << "SIFT" << " - OK." << endl;
+                 if (parser.has("output")) cout << "SIFT" << " - OK." << endl;
             }
     }
     else
@@ -137,24 +133,36 @@ int main(int argc, char *argv[])
 
     Mat im1_dsc, im2_dsc;
 
+    vector < vector< DMatch > > matches;
+    vector <DMatch> single_matches;
+    vector <Point2f> im1_pts, im2_pts;
+
+        /** Main pipeline **/
+
+
     double timestamp1, timestamp2;  //Временные метки ***
     timestamp1   = (double)getTickCount();
     detector_obj->detectAndCompute( img1, Mat(), im1_kps, im1_dsc);
     timestamp2 = (double)getTickCount();
-    cout << "Time for detection and compution of frame 1: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
-    cout << "Number of features for image 1: " << im1_kps.size() << endl;
-    timestamp1   = (double)getTickCount();
+
+        if (parser.has("output"))
+        cout << "Time for detection and compution of frame 1: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
+    if (parser.has("output"))
+        cout << "Number of features for image 1: " << im1_kps.size() << endl;
+
+        timestamp1   = (double)getTickCount();
     detector_obj->detectAndCompute( img2, Mat(), im2_kps, im2_dsc);
     timestamp2 = (double)getTickCount();
-    cout << "Time for detection and compution of frame 2: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
-    cout << "Number of features for image 2: " << im2_kps.size() << endl;
 
-    Ptr<DescriptorMatcher> matcher;
-    matcher = DescriptorMatcher::create("BruteForce");
-    vector < vector< DMatch > > matches;
-    vector <DMatch> single_matches;
-    vector <Point2f> im1_pts, im2_pts;
-    matcher->radiusMatch(im1_dsc, im2_dsc, matches, 400);
+        if (parser.has("output"))
+        cout << "Time for detection and compution of frame 2: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
+    if (parser.has("output"))
+        cout << "Number of features for image 2: " << im2_kps.size() << endl;
+
+
+
+        /** Matching **/
+    matcher->radiusMatch(im1_dsc, im2_dsc, matches, 200);
 
     for( size_t i = 0; i < matches.size(); i++ )
     {
@@ -170,12 +178,11 @@ int main(int argc, char *argv[])
 
     }
 
-     cout << "Number of matched features: " << im1_kps_matched.size() << endl;
-
+         /** Selecting inliers with RANSAC **/
     vector<int> mask;
     Mat H = findHomography( im1_pts, im2_pts, RANSAC, 3,mask);
-    //Mat H = estimateAffine2D(im1_pts, im2_pts, mask,RANSAC);
-    cout << "Homography matrix:" << endl << H << endl;
+
+
     //cout << "Mask:" << endl << mask << endl;
 
     for( uint i = 0; i < single_matches.size(); i++ )
@@ -194,21 +201,41 @@ int main(int argc, char *argv[])
 
     }
 
-    Mat im_result;// = img1.clone();
-    /*
-    drawKeypointCircle(im_result, im1_kps_matched, Scalar(0, 255 , 0));
-    drawKeypointCircle(im_result, im2_kps_matched, Scalar(255, 0 , 0));
-*/
-    addWeighted(img1 , 0.5, img2, 0.5, 0.0, im_result);
-    drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
-                                                         Scalar(255, 255 , 0),
-                                                         Scalar(0, 255 , 0));
-    drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
-                                                           Scalar(0 , 255 , 255),
-                                                           Scalar(0, 0 , 255));
-    imshow( "image1", im_result );
-    cvWaitKey();
-    //imshow( "image1", img2 );
-    //cvWaitKey();
+
+    double inlier_ratio = im1_inliers.size() * 1.0 /im1_kps_matched.size();
+
+    if (parser.has("output"))
+    {
+        cout << "Inliers: " <<  im1_inliers.size() << endl;
+        cout << "Outliers: " << im1_outliers.size() << endl;
+        cout << "Inliers ratio: " << endl;
+        cout << "Homography matrix:" << endl << H << endl;
+
+        Mat im_result;// = img1.clone();
+
+        addWeighted(img1 , 0.5, img2, 0.5, 0.0, im_result);
+        drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
+                                                             Scalar(255, 255 , 0),
+                                                             Scalar(0, 255 , 0));
+        drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
+                                                               Scalar(0 , 255 , 255),
+                                                               Scalar(0, 0 , 255));
+        imshow( "image1", im_result );
+        cvWaitKey();
+        //imshow( "image1", img2 );
+        //cvWaitKey();
+     }
+     else
+     {
+       // cout << "detectorName \t inputImage2 \t im1_kps \t im2_kps \t matched \t inliers \t outliers \t ratio" << endl;
+        cout << detectorName << "\t";
+        cout << inputImage2 << "\t";
+        cout << im1_kps.size() << "\t";
+        cout << im2_kps.size() << "\t";
+        cout << im1_kps_matched.size()  << "\t";
+        cout << im1_inliers.size() << "\t" ;
+        cout << im1_outliers.size() << "\t";
+        cout << inlier_ratio << endl;
+     }
     return 0;
 }
