@@ -128,14 +128,16 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector<KeyPoint> im1_kps, im2_kps, im1_kps_matched, im2_kps_matched,
-                     im1_inliers, im2_inliers, im1_outliers, im2_outliers;
+    vector<KeyPoint> im1_kps, im2_kps, im1_kps_matched, im2_kps_matched;
+        //im1_inliers, im2_inliers, im1_outliers, im2_outliers;
 
-    Mat im1_dsc, im2_dsc;
+
+    Mat im1_dsc, im2_dsc, inliers;
 
     vector < vector< DMatch > > matches;
     vector <DMatch> single_matches;
     vector <Point2f> im1_pts, im2_pts;
+
 
         /** Main pipeline **/
 
@@ -162,9 +164,9 @@ int main(int argc, char *argv[])
 
 
         /** Matching **/
-    matcher->radiusMatch(im1_dsc, im2_dsc, matches, 200);
-
-    for( size_t i = 0; i < matches.size(); i++ )
+    matcher->knnMatch(im1_dsc, im2_dsc, matches,1);
+    size_t size = matches.size();
+    for( size_t i = 0; i < size; i++ )
     {
         if (!matches[i].empty())
         {
@@ -180,12 +182,13 @@ int main(int argc, char *argv[])
 
          /** Selecting inliers with RANSAC **/
     vector<int> mask;
-    Mat H = findHomography( im1_pts, im2_pts, RANSAC, 3,mask);
+    //Mat H = findHomography( im1_pts, im2_pts, RANSAC, 3,mask);
+    Mat H = estimateAffinePartial2D(im1_pts, im2_pts, inliers, RANSAC);
 
 
     //cout << "Mask:" << endl << mask << endl;
 
-    for( uint i = 0; i < single_matches.size(); i++ )
+   /* for( uint i = 0; i < single_matches.size(); i++ )
     {
         DMatch tempDM = single_matches[i];
         if (mask[i])
@@ -199,27 +202,27 @@ int main(int argc, char *argv[])
             im2_outliers.push_back( im2_kps[ tempDM.trainIdx ] );
         }
 
-    }
+    }*/
 
 
-    double inlier_ratio = im1_inliers.size() * 1.0 /im1_kps_matched.size();
+    //double inlier_ratio = inliers.size() * 1.0 /im1_kps_matched.size();
 
     if (parser.has("output"))
     {
-        cout << "Inliers: " <<  im1_inliers.size() << endl;
-        cout << "Outliers: " << im1_outliers.size() << endl;
+        cout << "Inliers: " <<  inliers.size() << endl;
+       // cout << "Outliers: " << im1_outliers.size() << endl;
         cout << "Inliers ratio: " << endl;
-        cout << "Homography matrix:" << endl << H << endl;
+        cout << "Affine matrix:" << endl << H << endl;
 
         Mat im_result;// = img1.clone();
 
         addWeighted(img1 , 0.5, img2, 0.5, 0.0, im_result);
-        drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
+       /* drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
                                                              Scalar(255, 255 , 0),
-                                                             Scalar(0, 255 , 0));
-        drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
+                                                             Scalar(0, 255 , 0));*/
+       /* drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
                                                                Scalar(0 , 255 , 255),
-                                                               Scalar(0, 0 , 255));
+                                                               Scalar(0, 0 , 255));*/
         imshow( "image1", im_result );
         cvWaitKey();
         //imshow( "image1", img2 );
@@ -233,9 +236,9 @@ int main(int argc, char *argv[])
         cout << im1_kps.size() << "\t";
         cout << im2_kps.size() << "\t";
         cout << im1_kps_matched.size()  << "\t";
-        cout << im1_inliers.size() << "\t" ;
-        cout << im1_outliers.size() << "\t";
-        cout << inlier_ratio << endl;
+        //cout << inliers.size() << "\t" ;
+        //cout << im1_outliers.size() << "\t";
+       // cout << inlier_ratio << endl;
      }
     return 0;
 }
