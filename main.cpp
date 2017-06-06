@@ -128,11 +128,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    vector<KeyPoint> im1_kps, im2_kps, im1_kps_matched, im2_kps_matched;
-        //im1_inliers, im2_inliers, im1_outliers, im2_outliers;
+    vector<KeyPoint> im1_kps, im2_kps, im1_kps_matched, im2_kps_matched,
+        im1_inliers, im2_inliers, im1_outliers, im2_outliers;
 
 
-    Mat im1_dsc, im2_dsc, inliers;
+    Mat im1_dsc, im2_dsc, mask;
 
     vector < vector< DMatch > > matches;
     vector <DMatch> single_matches;
@@ -164,7 +164,8 @@ int main(int argc, char *argv[])
 
 
         /** Matching **/
-    matcher->knnMatch(im1_dsc, im2_dsc, matches,1);
+    //matcher->knnMatch(im1_dsc, im2_dsc, matches,1);
+    matcher->radiusMatch(im1_dsc, im2_dsc, matches, 0.1);
     size_t size = matches.size();
     for( size_t i = 0; i < size; i++ )
     {
@@ -181,17 +182,19 @@ int main(int argc, char *argv[])
     }
 
          /** Selecting inliers with RANSAC **/
-    vector<int> mask;
+   // vector<int> mask;
     //Mat H = findHomography( im1_pts, im2_pts, RANSAC, 3,mask);
-    Mat H = estimateAffinePartial2D(im1_pts, im2_pts, inliers, RANSAC);
+    Mat H = estimateAffinePartial2D(im1_pts, im2_pts, mask, RANSAC);
 
 
     //cout << "Mask:" << endl << mask << endl;
 
-   /* for( uint i = 0; i < single_matches.size(); i++ )
+    size = mask.rows;
+
+    for( int i = 0; i < mask.rows; i++ )
     {
         DMatch tempDM = single_matches[i];
-        if (mask[i])
+        if ( mask.at<int>(i,1) )
         {
             im1_inliers.push_back( im1_kps[ tempDM.queryIdx ] );
             im2_inliers.push_back( im2_kps[ tempDM.trainIdx ] );
@@ -202,27 +205,27 @@ int main(int argc, char *argv[])
             im2_outliers.push_back( im2_kps[ tempDM.trainIdx ] );
         }
 
-    }*/
+    }
 
 
-    //double inlier_ratio = inliers.size() * 1.0 /im1_kps_matched.size();
+    double inlier_ratio = im1_inliers.size() * 1.0 /im1_kps_matched.size();
 
     if (parser.has("output"))
     {
-        cout << "Inliers: " <<  inliers.size() << endl;
-       // cout << "Outliers: " << im1_outliers.size() << endl;
-        cout << "Inliers ratio: " << endl;
+        cout << "Inliers: " <<  im1_inliers.size() << endl;
+         cout << "Outliers: " << im1_outliers.size() << endl;
+        cout << "Inliers ratio: " << inlier_ratio << endl;
         cout << "Affine matrix:" << endl << H << endl;
 
         Mat im_result;// = img1.clone();
 
         addWeighted(img1 , 0.5, img2, 0.5, 0.0, im_result);
-       /* drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
+        drawMatchesLines (im_result,im1_inliers,im2_inliers, Scalar(255, 255 , 0),
                                                              Scalar(255, 255 , 0),
-                                                             Scalar(0, 255 , 0));*/
-       /* drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
+                                                             Scalar(0, 255 , 0));
+        drawMatchesLines (im_result,im1_outliers,im2_outliers, Scalar(0, 255 , 255),
                                                                Scalar(0 , 255 , 255),
-                                                               Scalar(0, 0 , 255));*/
+                                                               Scalar(0, 0 , 255));
         imshow( "image1", im_result );
         cvWaitKey();
         //imshow( "image1", img2 );
@@ -230,15 +233,15 @@ int main(int argc, char *argv[])
      }
      else
      {
-       // cout << "detectorName \t inputImage2 \t im1_kps \t im2_kps \t matched \t inliers \t outliers \t ratio" << endl;
+        cout << "detectorName \t inputImage2 \t im1_kps \t im2_kps \t matched \t inliers \t outliers \t ratio" << endl;
         cout << detectorName << "\t";
         cout << inputImage2 << "\t";
         cout << im1_kps.size() << "\t";
         cout << im2_kps.size() << "\t";
         cout << im1_kps_matched.size()  << "\t";
-        //cout << inliers.size() << "\t" ;
-        //cout << im1_outliers.size() << "\t";
-       // cout << inlier_ratio << endl;
+        cout << im1_inliers.size() << "\t" ;
+        cout << im1_outliers.size() << "\t";
+        cout << inlier_ratio << endl;
      }
     return 0;
 }
