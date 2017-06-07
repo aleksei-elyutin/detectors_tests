@@ -36,6 +36,7 @@ const string keys =
      {@image1Name     |      | image  for processing   } \
      {@image2Name     |      | image  for processing   } \
      {@detector       |SURF  | detector name           } \
+     {distance        |      | detector name           } \
      {o output        |      | detector name           }";
 
 int main(int argc, char *argv[])
@@ -77,9 +78,9 @@ int main(int argc, char *argv[])
     Ptr<Feature2D> detector_obj;
     Ptr<DescriptorMatcher> matcher;
     matcher = DescriptorMatcher::create("BruteForce");
+    double thresh;
 
     if ((detectorName == "SURF")  |
-        (detectorName == "KAZE")  |
         (detectorName == "AKAZE") |
         (detectorName == "BRISK") |
         (detectorName == "ORB") |
@@ -87,37 +88,37 @@ int main(int argc, char *argv[])
     {
         if (detectorName == "SURF") /** SURF creation **/
             {
+                thresh = 0.2;
                 detector_obj = SURF::create(); //defaults
                 /*detector_obj = SURF::create(
-                            700, // hessianThreshold - порог гессиана
-                            3, // nOctaves - число октав
+                            300, // hessianThreshold - порог гессиана
+                            4, // nOctaves - число октав
                             3, // nOctaveLayers - число уровней внутри каждой октавы
                             false, // использовать расширенный дескриптор
                             true); // использовать вычисление ориентации*/
                 if (parser.has("output")) cout << "SURF" << " - OK." << endl;
              }
-        if (detectorName == "KAZE")  /** KAZE creation **/
-            {
-                detector_obj = KAZE::create(); //defaults
-                if (parser.has("output")) cout << "KAZE" << " - OK." << endl;
-            }
         if (detectorName == "AKAZE")  /** AKAZE creation **/
             {
+                thresh = 200;
                 detector_obj = AKAZE::create(); //defaults
                 if (parser.has("output")) cout << "AKAZE" << " - OK." << endl;
             }
         if (detectorName == "BRISK")  /** BRISK creation **/
             {
+                thresh = 600;
                 detector_obj = BRISK::create(); //defaults
                 if (parser.has("output")) cout << "BRISK" << " - OK." << endl;
             }
         if (detectorName == "ORB")  /** FAST creation **/
             {
+        thresh = 600;
                 detector_obj = ORB::create(); //defaults
                  if (parser.has("output")) cout << "ORB" << " - OK." << endl;
             }
         if (detectorName == "SIFT")  /** FAST creation **/
             {
+                 thresh = 600;
                 detector_obj = SIFT::create(); //defaults
                  if (parser.has("output")) cout << "SIFT" << " - OK." << endl;
             }
@@ -152,9 +153,9 @@ int main(int argc, char *argv[])
     if (parser.has("output"))
         cout << "Number of features for image 1: " << im1_kps.size() << endl;
 
-        timestamp1   = (double)getTickCount();
+    //    timestamp1   = (double)getTickCount();
     detector_obj->detectAndCompute( img2, Mat(), im2_kps, im2_dsc);
-    timestamp2 = (double)getTickCount();
+   // timestamp2 = (double)getTickCount();
 
         if (parser.has("output"))
         cout << "Time for detection and compution of frame 2: " << (timestamp2-timestamp1)/getTickFrequency() << endl;
@@ -164,19 +165,32 @@ int main(int argc, char *argv[])
 
 
         /** Matching **/
-    //matcher->knnMatch(im1_dsc, im2_dsc, matches,1);
-    matcher->radiusMatch(im1_dsc, im2_dsc, matches, 0.1);
+    matcher->knnMatch(im1_dsc, im2_dsc, matches,4);
+    double distance_thresh = parser.get<double>("distance");;
+   // matcher->radiusMatch(im1_dsc, im2_dsc, matches, thresh);
     size_t size = matches.size();
     for( size_t i = 0; i < size; i++ )
     {
         if (!matches[i].empty())
-        {
-            DMatch tempDM = matches[i].front();
-            single_matches.push_back(tempDM);
-            im1_kps_matched.push_back( im1_kps[ tempDM.queryIdx ] );
-            im2_kps_matched.push_back( im2_kps[ tempDM.trainIdx ] );
-            im1_pts.push_back( im1_kps[ tempDM.queryIdx ].pt );
-            im2_pts.push_back( im2_kps[ tempDM.trainIdx ].pt );
+        {           
+            vector <DMatch> multi_matches = matches[i];
+            size_t size2 = multi_matches.size();
+            double min_distance  = multi_matches.front().distance;
+            int n = 0;
+            for( size_t j = 0; j < size2; j++ )
+            {
+               if  (multi_matches[j].distance < min_distance) n = j;
+            }
+            DMatch tempDM = multi_matches[n];
+            if  (tempDM.distance < distance_thresh)
+            {
+                single_matches.push_back(tempDM);
+                im1_kps_matched.push_back( im1_kps[ tempDM.queryIdx ] );
+                im2_kps_matched.push_back( im2_kps[ tempDM.trainIdx ] );
+                im1_pts.push_back( im1_kps[ tempDM.queryIdx ].pt );
+                im2_pts.push_back( im2_kps[ tempDM.trainIdx ].pt );
+            }
+
         }
 
     }
@@ -186,12 +200,12 @@ int main(int argc, char *argv[])
     //Mat H = findHomography( im1_pts, im2_pts, RANSAC, 3,mask);
     Mat H = estimateAffinePartial2D(im1_pts, im2_pts, mask, RANSAC);
 
-
+    timestamp2 = (double)getTickCount();
     //cout << "Mask:" << endl << mask << endl;
 
     size = mask.rows;
 
-    for( int i = 0; i < mask.rows; i++ )
+    for( int i = 0; i < mask.rows; i++ ) //Отделение inlier и outlier
     {
         DMatch tempDM = single_matches[i];
         if ( mask.at<int>(i,1) )
@@ -212,8 +226,9 @@ int main(int argc, char *argv[])
 
     if (parser.has("output"))
     {
+        cout << "Matches: " << single_matches.size() << endl;
         cout << "Inliers: " <<  im1_inliers.size() << endl;
-         cout << "Outliers: " << im1_outliers.size() << endl;
+        cout << "Outliers: " << im1_outliers.size() << endl;
         cout << "Inliers ratio: " << inlier_ratio << endl;
         cout << "Affine matrix:" << endl << H << endl;
 
@@ -233,15 +248,16 @@ int main(int argc, char *argv[])
      }
      else
      {
-        cout << "detectorName \t inputImage2 \t im1_kps \t im2_kps \t matched \t inliers \t outliers \t ratio" << endl;
-        cout << detectorName << "\t";
-        cout << inputImage2 << "\t";
-        cout << im1_kps.size() << "\t";
-        cout << im2_kps.size() << "\t";
-        cout << im1_kps_matched.size()  << "\t";
-        cout << im1_inliers.size() << "\t" ;
-        cout << im1_outliers.size() << "\t";
+       // cout << "detectorName \t inputImage2 \t im1_kps \t im2_kps \t matched \t inliers \t outliers \t ratio" << endl;
+        //cout << detectorName << "\t";
+        //cout << inputImage2 << "\t";
+        cout << (timestamp2-timestamp1)/getTickFrequency() << ", ";
+        cout << im2_kps.size() << ", ";
+        cout << im1_kps_matched.size()  << ", ";
+        cout << im1_inliers.size() << ", " ;
+        cout << im1_outliers.size() << ", ";
         cout << inlier_ratio << endl;
+        cout << format(H, Formatter::FMT_CSV   ) << endl;
      }
     return 0;
 }
